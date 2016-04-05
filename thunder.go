@@ -4,6 +4,7 @@ import (
         "encoding/json"
         "fmt"
         "net/http"
+        "net/url"
         "io/ioutil"
         "bytes"
         "strconv"
@@ -52,7 +53,7 @@ func (c *Client) Set(key string, value interface {},  optional ...int64) error {
 }
 
 
-func (c *Client) Get(key string) (interface {}, bool) {
+func (c *Client) Get(key string) (interface {}, error) {
   var value interface {}
 
   url := fmt.Sprintf("%s/get/%s", c.url, key)
@@ -63,17 +64,21 @@ func (c *Client) Get(key string) (interface {}, bool) {
 
   defer resp.Body.Close()
 
+  if err := handleAuth(resp); err != nil {
+    return nil, err
+  }
+
   if err := handleNotFound(resp); err != nil {
-    return nil, false
+    return nil, err
   }
 
   content, err := ioutil.ReadAll(resp.Body)
 
-  if (err != nil) { panic(err) }
+  if (err != nil) { return nil, err }
 
   json.Unmarshal(content, &value)
 
-  return value, true
+  return value, nil
 }
 
 func (c *Client) Update(key, value interface {}) error {
@@ -90,6 +95,7 @@ func (c *Client) Update(key, value interface {}) error {
   if err := handleAuth(resp); err == nil {
     return handleUnprocessableEntity(resp)
   }
+
   return err
 }
 
@@ -103,8 +109,28 @@ func (c *Client) Delete(key string) {
   resp.Body.Close()
 }
 
-func (c *Client) Keys(pattern string) {
+func (c *Client) Keys(pattern string) ([]string, error) {
+  var keys []string
+  pattern = url.QueryEscape(pattern)
+  url := fmt.Sprintf("%s/keys/%s", c.url, pattern)
 
+  resp, err := c.makeRequest("GET", url, nil)
+
+  if err != nil { return nil, err}
+
+  defer resp.Body.Close()
+
+  if err := handleAuth(resp); err != nil { return nil, err }
+
+  if err := handleUnprocessableEntity(resp); err != nil { return nil, err }
+
+  content, err := ioutil.ReadAll(resp.Body)
+
+  if (err != nil) { return nil, err }
+
+  json.Unmarshal(content, &keys)
+
+  return keys, nil
 }
 
 func (c *Client) makeRequest(requestType string, url string, json []byte) (resp *http.Response, err error) {
