@@ -1,5 +1,5 @@
 # Thunder
-Golang toolkit for the ZigZag storage API
+Golang toolkit for the [ZigZag](https://github.com/valerykalashnikov/thunder) storage API
 
 ##Usage
 
@@ -33,7 +33,7 @@ To obtain value from storage
   value, err := client.Get("key") // error can contain http status code and message
 ~~~
 
-To delete value from storage(usefull when you have to update value without breaking expiration)
+To update storage value (usefull when you have to update value without breaking expiration)
 
 ~~~go
   value := "New value"
@@ -49,6 +49,6 @@ To delete value from storage
 To obtain keys matching pattern
 
 ~~~go
-  err := client.Keys("^[a-z]")
+  keys, err := client.Keys("^[a-z]")
 ~~~
 
